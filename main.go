@@ -1,20 +1,20 @@
 package main
 
-// #cgo LDFLAGS: -lX11
-// #include <X11/Xlib.h>
-import "C"
-
 import (
 	"fmt"
-	"time"
 	"io/ioutil"
+	"time"
+
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xprop"
 )
 
-var dpy = C.XOpenDisplay(nil)
-var done = make(chan int)
-var batPerc []byte
-var localTime string
-var utcTime string
+var (
+	done      = make(chan int)
+	batPerc   []byte
+	localTime string
+	utcTime   string
+)
 
 func bat() {
 	for {
@@ -24,7 +24,6 @@ func bat() {
 		}
 		batPerc = perc[:len(perc)-1]
 		done <- 1
-		fmt.Printf("bat update")
 		time.Sleep(time.Minute)
 	}
 }
@@ -40,7 +39,8 @@ func clock() {
 }
 
 func main() {
-	if dpy == nil {
+	conn, err := xgbutil.NewConn()
+	if err != nil {
 		panic("Cannot open display.")
 	}
 	go bat()
@@ -48,7 +48,9 @@ func main() {
 	for {
 		_ = <-done
 		out := fmt.Sprintf(" \u26A1%s%% | %s (%s UTC)", batPerc, localTime, utcTime)
-		C.XStoreName(dpy, C.XDefaultRootWindow(dpy), C.CString(out))
-		C.XSync(dpy, 1)
+		err := xprop.ChangeProp(conn, conn.RootWin(), 8, "WM_NAME", "STRING", []byte(out))
+		if err != nil {
+			panic("Cannot set status.")
+		}
 	}
 }
