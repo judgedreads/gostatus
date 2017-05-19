@@ -81,6 +81,7 @@ func net() {
 			devs = append(devs, strings.Trim(resp.String(), "\" "))
 		}
 		netDevs = strings.Join(devs, " | ")
+		devs = devs[:0]
 	}
 }
 
@@ -115,7 +116,7 @@ func main() {
 	for {
 		_ = <-done
 		// TODO: use strings.Join
-		out := fmt.Sprintf(" %s | %s | \u26A1%s%% | %s (%s UTC)", volume, netDevs, batPerc, localTime, utcTime)
+		out := fmt.Sprintf(" 🔊 %s | %s | \u26A1%s%% | %s (%s UTC)", volume, netDevs, batPerc, localTime, utcTime)
 		err := xprop.ChangeProp(conn, conn.RootWin(), 8, "WM_NAME", "STRING", []byte(out))
 		if err != nil {
 			panic("Cannot set status.")
