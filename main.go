@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"bufio"
 	"io/ioutil"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -17,6 +19,7 @@ var (
 	localTime string
 	utcTime   string
 	netDevs   string
+	volume    string
 )
 
 func bat() {
@@ -81,6 +84,25 @@ func net() {
 	}
 }
 
+func vol() {
+	cmd := exec.Command("volmon", "default", "Master")
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		panic(err)
+	}
+	err = cmd.Start()
+	if err != nil {
+		panic(err)
+	}
+	defer cmd.Wait()
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		volume = scanner.Text()
+	}
+}
+
+// TODO: if possible, write errors to status area, rather than panic
 func main() {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
@@ -89,9 +111,11 @@ func main() {
 	go bat()
 	go clock()
 	go net()
+	go vol()
 	for {
 		_ = <-done
-		out := fmt.Sprintf(" %s | \u26A1%s%% | %s (%s UTC)", netDevs, batPerc, localTime, utcTime)
+		// TODO: use strings.Join
+		out := fmt.Sprintf(" %s | %s | \u26A1%s%% | %s (%s UTC)", volume, netDevs, batPerc, localTime, utcTime)
 		err := xprop.ChangeProp(conn, conn.RootWin(), 8, "WM_NAME", "STRING", []byte(out))
 		if err != nil {
 			panic("Cannot set status.")
