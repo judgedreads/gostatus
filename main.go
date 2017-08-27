@@ -65,8 +65,12 @@ func activeNetDevices(conn *dbus.Conn, obj dbus.BusObject) error {
 			// a new one is activated
 			continue
 		}
-		s = resp.String()
-		obj = conn.Object("org.freedesktop.NetworkManager", dbus.ObjectPath(s[6:len(s)-2]))
+		path = strings.TrimPrefix(resp.String(), "@ao ")
+		path = strings.Trim(path, "\"[] ")
+		if path == "" {
+			continue
+		}
+		obj = conn.Object("org.freedesktop.NetworkManager", dbus.ObjectPath(path))
 		resp, err = obj.GetProperty("org.freedesktop.NetworkManager.Device.Interface")
 		if err != nil {
 			return err
