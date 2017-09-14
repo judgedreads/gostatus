@@ -20,10 +20,8 @@ func newTimeMon(format, zone string) *timeMon {
 }
 
 func (t *timeMon) Run(done chan int) {
-	for {
-		t.now = time.Now()
+	for t.now = range time.Tick(time.Second) {
 		done <- 1
-		time.Sleep(time.Second)
 	}
 }
 
