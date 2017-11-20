@@ -18,7 +18,7 @@ type plugin interface {
 	String() string
 }
 
-var plugins = []plugin{
+var plugins = [...]plugin{
 	&volMon{card: "default", mix: "Master"},
 	&netMon{},
 	&batMon{},
@@ -26,7 +26,6 @@ var plugins = []plugin{
 	newTimeMon(utcfmt, "UTC"),
 }
 
-// TODO: if possible, write errors to status area, rather than panic
 func main() {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
