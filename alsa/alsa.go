@@ -105,6 +105,13 @@ func (e *Elem) PlaybackVolume() int {
 	return int(volC)
 }
 
+// PlaybackSwitch returns 0 if the element is muted, and 1 otherwise
+func (e *Elem) PlaybackSwitch() int {
+	var psC C.int
+	C.snd_mixer_selem_get_playback_switch((*C.snd_mixer_elem_t)(e), FRONT_LEFT, &psC)
+	return int(psC)
+}
+
 func (e *Elem) Subscribe() chan int {
 	// need to cast C function pointer to *[0]byte, as that is how
 	// unsupported C pointers are represented in go
