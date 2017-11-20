@@ -1,33 +1,49 @@
 package main
 
 import (
-	"bufio"
-	"os/exec"
+	"fmt"
+
+	"github.com/judgedreads/gostatus/alsa"
 )
 
 type volMon struct {
-	vol string
+	vol  int
+	card string
+	mix  string
+	err  string
 }
 
 func (v *volMon) Run(done chan int) {
-	cmd := exec.Command("volmon", "default", "Master")
-	stdout, err := cmd.StdoutPipe()
+	mixer, err := alsa.Open(v.card)
 	if err != nil {
-		panic(err)
-	}
-	err = cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-	defer cmd.Wait()
-
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		v.vol = scanner.Text()
+		v.err = err.Error()
 		done <- 1
+		return
 	}
+	defer mixer.Close()
+	elem, err := mixer.Elem(v.mix)
+	if err != nil {
+		v.err = err.Error()
+		done <- 1
+		return
+	}
+	_, max := elem.PlaybackVolumeRange()
+	vol := elem.PlaybackVolume()
+	v.vol = (vol * 100) / max
+	ch := elem.Subscribe()
+	go func() {
+		for _ = range ch {
+			vol := elem.PlaybackVolume()
+			v.vol = (vol * 100) / max
+			done <- 1
+		}
+	}()
+	mixer.Listen()
 }
 
 func (v *volMon) String() string {
-	return v.vol
+	if v.err != "" {
+		return v.err
+	}
+	return fmt.Sprintf("v: %d%%", v.vol)
 }

@@ -19,7 +19,7 @@ type plugin interface {
 }
 
 var plugins = []plugin{
-	&volMon{},
+	&volMon{card: "default", mix: "Master"},
 	&netMon{},
 	&batMon{},
 	newTimeMon(localfmt, "Local"),
